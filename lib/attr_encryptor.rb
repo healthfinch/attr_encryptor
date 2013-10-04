@@ -144,7 +144,6 @@ module AttrEncryptor
       end
 
       define_method(attribute) do
-        
         load_iv_for_attribute(attribute,encrypted_attribute_name, options[:algorithm])
         load_salt_for_attribute(attribute,encrypted_attribute_name)
         load_index_for_attribute(attribute, encrypted_attribute_name) if options[:index]
@@ -206,19 +205,18 @@ module AttrEncryptor
   def decrypt(attribute, encrypted_value, options = {})
     options = encrypted_attributes[attribute.to_sym].merge(options)
 
-    valid = ""
+    value = "Decryption error"
     begin
       if options[:if] && !options[:unless] && !encrypted_value.nil? && !(encrypted_value.is_a?(String) && encrypted_value.empty?)
         encrypted_value = encrypted_value.unpack(options[:encode]).first if options[:encode]
         value = options[:encryptor].send(options[:decrypt_method], options.merge!(:value => encrypted_value))
         value = options[:marshaler].send(options[:load_method], value) if options[:marshal]
-        value = value.to_date if value != nil && options[:rails_date]
+        value = value.to_date if value != nil && String.instance_methods(false).include?(:to_date) && options[:rails_date]
       else
         value = encrypted_value
       end
     rescue
-      raise if options[:suppress_access_exception]
-      value = "Decryption error"
+      raise if !options[:suppress_access_exception]
     end
 
     value
@@ -356,7 +354,7 @@ module AttrEncryptor
       end
 
       def load_index_for_attribute(attribute, encrypted_attribute_name, value = nil)
-        options = encrypted_attributes[attribute.to_sym].merge(options)
+        options = self.class.encrypted_attributes[attribute.to_sym]
         index = send("#{encrypted_attribute_name.to_s + "_index"}")
         if (value != nil)
           index = AttrEncryptor::generate_index_hash(options[:index_key], value)

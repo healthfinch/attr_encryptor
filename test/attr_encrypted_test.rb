@@ -25,6 +25,9 @@ class User
   attr_encrypted :with_true_unless, :key => 'secret key', :unless => true
   attr_encrypted :with_false_unless, :key => 'secret key', :unless => false
   attr_encrypted :with_if_changed, :key => 'secret key', :if => :should_encrypt
+  attr_encrypted :with_index, :key => 'secret key', :index_key => 'index secret key', :index => true
+  attr_encrypted :with_suppression, :key => 'secret key', :suppress_access_exception => true
+  attr_encrypted :with_rails_date, :key => 'secret key', :rails_date => true
 
   attr_encryptor :aliased, :key => 'secret_key'
 
@@ -276,6 +279,28 @@ class AttrEncryptorTest < Test::Unit::TestCase
     assert !@user.email?
     @user.email = 'test@example.com'
     assert @user.email?
+  end
+
+  def test_should_create_index
+    @user = User.new
+    @user.with_index = "test value"
+    assert_not_nil @user.encrypted_with_index_index
+    assert_equal false, @user.encrypted_with_index_index.blank?
+  end
+
+  def test_should_create_hashable_index
+    @user = User.new
+    @user.with_index = "test value"
+    assert_equal AttrEncryptor::generate_index_hash("index secret key", "test value"), @user.encrypted_with_index_index
+  end
+
+  def test_should_suppress_access_excetions
+    @user = User.new
+    @user.with_suppression = 'value'
+    assert_nothing_raised do
+      User.decrypt(:with_suppression, @user.encrypted_with_suppression, :key => "a different secret key")
+    end
+    assert_equal "Decryption error", User.decrypt(:with_suppression, @user.encrypted_with_suppression, :key => "a different secret key")
   end
 
 end

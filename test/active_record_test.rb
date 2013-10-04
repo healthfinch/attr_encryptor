@@ -10,10 +10,13 @@ def create_tables
         t.string   :password
         t.string   :encrypted_credentials
         t.binary   :salt
-         t.string   :encrypted_email_salt
+        t.string   :encrypted_email_salt
         t.string   :encrypted_credentials_salt
         t.string   :encrypted_email_iv
         t.string   :encrypted_credentials_iv
+        t.string   :encrypted_with_rails_date
+        t.string   :encrypted_with_rails_date_iv
+        t.string   :encrypted_with_rails_date_salt
       end
       create_table :accounts do |t|
         t.string :encrypted_password
@@ -32,7 +35,7 @@ ActiveRecord::MissingAttributeError = ActiveModel::MissingAttributeError unless 
 class Person < ActiveRecord::Base
   attr_encrypted :email, :key => "secret"
   attr_encrypted :credentials, :key => Proc.new { |user| Encryptor.encrypt(:value => user.salt, :key => 'secret_key') }, :marshal => true
-
+  attr_encrypted :with_rails_date, :key => "secret", :rails_date => true
 
   after_initialize :initialize_salt_and_credentials
 
@@ -95,6 +98,13 @@ class ActiveRecordTest < Test::Unit::TestCase
   def _test_should_create_an_account_regardless_of_arguments_order
     Account.create!(:key => "secret", :password => "password")
     Account.create!(:password => "password" , :key => "secret")
+  end
+
+  def _test_should_return_date_with_rails_date
+    @user = Person.new
+    @now = DateTime.new
+    @user.with_rails_date = @now
+    assert_equals @now, Person.decrypt(:with_rails_date, @user.encrypted_with_rails_date)
   end
 
 end
