@@ -14,3 +14,9 @@ tmp
 .yardoc
 _yardoc
 doc/
+
+# RubyMine
+.idea
+
+# Gemfile
+Gemfile.lock

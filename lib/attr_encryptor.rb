@@ -13,6 +13,12 @@ module AttrEncryptor
     end
   end
 
+  def self.generate_index_hash(key, value)
+    digest = OpenSSL::Digest::Digest.new("sha256")
+    index = OpenSSL::HMAC.digest(digest, key, value)
+    [index].pack("m")
+  end
+
   # Generates attr_accessors that encrypt and decrypt attributes transparently
   #
   # Options (any other options you specify are passed to the encryptor's encrypt and decrypt methods)
@@ -99,19 +105,22 @@ module AttrEncryptor
   #   See README for more examples
   def attr_encrypted(*attributes)
     options = {
-      :prefix           => 'encrypted_',
-      :suffix           => '',
-      :if               => true,
-      :unless           => false,
-      :encode           => false,
-      :default_encoding => 'm',
-      :marshal          => false,
-      :marshaler        => Marshal,
-      :dump_method      => 'dump',
-      :load_method      => 'load',
-      :encryptor        => Encryptor,
-      :encrypt_method   => 'encrypt',
-      :decrypt_method   => 'decrypt'
+      :prefix                    => 'encrypted_',
+      :suffix                    => '',
+      :if                        => true,
+      :unless                    => false,
+      :encode                    => false,
+      :default_encoding          => 'm',
+      :marshal                   => false,
+      :marshaler                 => Marshal,
+      :dump_method               => 'dump',
+      :load_method               => 'load',
+      :encryptor                 => Encryptor,
+      :encrypt_method            => 'encrypt',
+      :decrypt_method            => 'decrypt',
+      :index                     => false,
+      :suppress_access_exception => true,
+      :rails_date                => false
     }.merge!(attr_encrypted_options).merge!(attributes.last.is_a?(Hash) ? attributes.pop : {})
 
     options[:encode] = options[:default_encoding] if options[:encode] == true
@@ -129,19 +138,24 @@ module AttrEncryptor
       attr_reader (encrypted_attribute_name.to_s + "_salt").to_sym unless instance_methods_as_symbols.include?((encrypted_attribute_name.to_s + "_salt").to_sym )
       attr_writer (encrypted_attribute_name.to_s + "_salt").to_sym unless instance_methods_as_symbols.include?((encrypted_attribute_name.to_s + "_salt").to_sym )
 
-
+      if (options[:index])
+        attr_reader (encrypted_attribute_name.to_s + "_index").to_sym unless instance_methods_as_symbols.include?((encrypted_attribute_name.to_s + "_index").to_sym )
+        attr_writer (encrypted_attribute_name.to_s + "_index").to_sym unless instance_methods_as_symbols.include?((encrypted_attribute_name.to_s + "_index").to_sym )
+      end
 
       define_method(attribute) do
         
         load_iv_for_attribute(attribute,encrypted_attribute_name, options[:algorithm])
-        load_salt_for_attribute(attribute,encrypted_attribute_name) 
+        load_salt_for_attribute(attribute,encrypted_attribute_name)
+        load_index_for_attribute(attribute, encrypted_attribute_name) if options[:index]
 
         instance_variable_get("@#{attribute}") || instance_variable_set("@#{attribute}", decrypt(attribute, send(encrypted_attribute_name)))
       end
 
       define_method("#{attribute}=") do |value|
         load_iv_for_attribute(attribute, encrypted_attribute_name, options[:algorithm])
-        load_salt_for_attribute(attribute, encrypted_attribute_name) 
+        load_salt_for_attribute(attribute, encrypted_attribute_name)
+        load_index_for_attribute(attribute, encrypted_attribute_name, value) if options[:index]
         
         #this add's the iv and salt on the options for this instance
         send("#{encrypted_attribute_name}=", encrypt(attribute, value))
@@ -191,14 +205,23 @@ module AttrEncryptor
   #   email = User.decrypt(:email, 'SOME_ENCRYPTED_EMAIL_STRING')
   def decrypt(attribute, encrypted_value, options = {})
     options = encrypted_attributes[attribute.to_sym].merge(options)
-    if options[:if] && !options[:unless] && !encrypted_value.nil? && !(encrypted_value.is_a?(String) && encrypted_value.empty?)
-      encrypted_value = encrypted_value.unpack(options[:encode]).first if options[:encode]
-      value = options[:encryptor].send(options[:decrypt_method], options.merge!(:value => encrypted_value))
-      value = options[:marshaler].send(options[:load_method], value) if options[:marshal]
-      value
-    else
-      encrypted_value
+
+    valid = ""
+    begin
+      if options[:if] && !options[:unless] && !encrypted_value.nil? && !(encrypted_value.is_a?(String) && encrypted_value.empty?)
+        encrypted_value = encrypted_value.unpack(options[:encode]).first if options[:encode]
+        value = options[:encryptor].send(options[:decrypt_method], options.merge!(:value => encrypted_value))
+        value = options[:marshaler].send(options[:load_method], value) if options[:marshal]
+        value = value.to_date if value != nil && options[:rails_date]
+      else
+        value = encrypted_value
+      end
+    rescue
+      raise if options[:suppress_access_exception]
+      value = "Decryption error"
     end
+
+    value
   end
 
   # Encrypts a value for the attribute specified
@@ -292,10 +315,7 @@ module AttrEncryptor
     def encrypt(attribute, value)
       self.class.encrypt(attribute, value, evaluated_attr_encrypted_options_for(attribute))
     end
-    
-    def foo
 
-    end
     protected
 
       # Returns attr_encrypted options evaluated in the current object's scope for the attribute specified
@@ -334,8 +354,16 @@ module AttrEncryptor
         salt = send("#{encrypted_attribute_name.to_s + "_salt"}") || send("#{encrypted_attribute_name.to_s + "_salt"}=", Time.now.to_i.to_s) 
         self.class.encrypted_attributes[attribute.to_sym] = self.class.encrypted_attributes[attribute.to_sym].merge(:salt => salt)
       end
-  
 
+      def load_index_for_attribute(attribute, encrypted_attribute_name, value = nil)
+        options = encrypted_attributes[attribute.to_sym].merge(options)
+        index = send("#{encrypted_attribute_name.to_s + "_index"}")
+        if (value != nil)
+          index = AttrEncryptor::generate_index_hash(options[:index_key], value)
+          send("#{encrypted_attribute_name.to_s + "_index"}=", index)
+        end
+        self.class.encrypted_attributes[attribute.to_sym] = self.class.encrypted_attributes[attribute.to_sym].merge(:index_hash => index)
+      end
   end
 end
 
