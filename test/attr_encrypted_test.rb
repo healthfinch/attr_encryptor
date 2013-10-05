@@ -25,9 +25,9 @@ class User
   attr_encrypted :with_true_unless, :key => 'secret key', :unless => true
   attr_encrypted :with_false_unless, :key => 'secret key', :unless => false
   attr_encrypted :with_if_changed, :key => 'secret key', :if => :should_encrypt
-  attr_encrypted :with_index, :key => 'secret key', :index_key => 'index secret key', :index => true
+  attr_encrypted :with_index, :key => 'secret key', :index_key => 'index secret key'
   attr_encrypted :with_suppression, :key => 'secret key', :suppress_access_exception => true
-  attr_encrypted :with_rails_date, :key => 'secret key', :rails_date => true
+  attr_encrypted :with_force_date, :key => 'secret key', :force_date => true
 
   attr_encryptor :aliased, :key => 'secret_key'
 
@@ -291,7 +291,7 @@ class AttrEncryptorTest < Test::Unit::TestCase
   def test_should_create_hashable_index
     @user = User.new
     @user.with_index = "test value"
-    assert_equal AttrEncryptor::generate_index_hash("index secret key", "test value"), @user.encrypted_with_index_index
+    assert_equal User.generate_index_hash("index secret key", "test value"), @user.encrypted_with_index_index
   end
 
   def test_should_suppress_access_excetions
@@ -301,6 +301,14 @@ class AttrEncryptorTest < Test::Unit::TestCase
       User.decrypt(:with_suppression, @user.encrypted_with_suppression, :key => "a different secret key")
     end
     assert_equal "Decryption error", User.decrypt(:with_suppression, @user.encrypted_with_suppression, :key => "a different secret key")
+  end
+
+  def test_should_return_date_with_force_date
+    @user = User.new
+    @now = Date.new.to_s
+    @user.with_force_date = @now
+    assert User.decrypt(:with_force_date, @user.encrypted_with_force_date).is_a?(Date)
+    assert_equal Date.parse(@now), User.decrypt(:with_force_date, @user.encrypted_with_force_date)
   end
 
 end

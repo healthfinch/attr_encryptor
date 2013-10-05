@@ -14,9 +14,10 @@ def create_tables
         t.string   :encrypted_credentials_salt
         t.string   :encrypted_email_iv
         t.string   :encrypted_credentials_iv
-        t.string   :encrypted_with_rails_date
-        t.string   :encrypted_with_rails_date_iv
-        t.string   :encrypted_with_rails_date_salt
+        t.string   :encrypted_index
+        t.string   :encrypted_index_iv
+        t.string   :encrypted_index_salt
+        t.string   :encrypted_index_index
       end
       create_table :accounts do |t|
         t.string :encrypted_password
@@ -35,7 +36,7 @@ ActiveRecord::MissingAttributeError = ActiveModel::MissingAttributeError unless 
 class Person < ActiveRecord::Base
   attr_encrypted :email, :key => "secret"
   attr_encrypted :credentials, :key => Proc.new { |user| Encryptor.encrypt(:value => user.salt, :key => 'secret_key') }, :marshal => true
-  attr_encrypted :with_rails_date, :key => "secret", :rails_date => true
+  attr_encrypted :index, :key => "secret", :index_key => "index secret"
 
   after_initialize :initialize_salt_and_credentials
 
@@ -64,47 +65,48 @@ class ActiveRecordTest < Test::Unit::TestCase
     Account.create!(:key => "secret", :password => "password")
   end
 
-  def _test_should_encrypt_email
+  def test_should_encrypt_email
     @person = Person.create :email => 'test@example.com'
     assert_not_nil @person.encrypted_email
     assert_not_equal @person.email, @person.encrypted_email
     assert_equal @person.email, Person.find(:first).email
   end
 
-  def _test_should_marshal_and_encrypt_credentials
+  def test_should_marshal_and_encrypt_credentials
     @person = Person.create
     assert_not_nil @person.encrypted_credentials
     assert_not_equal @person.credentials, @person.encrypted_credentials
     assert_equal @person.credentials, Person.find(:first).credentials
   end
 
-  def _test_should_encode_by_default
+  def test_should_encode_by_default
     assert Person.attr_encrypted_options[:encode]
   end
 
-  def _test_should_validate_presence_of_email
+  def test_should_validate_presence_of_email
     @person = PersonWithValidation.new
     assert !@person.valid?
     assert !@person.errors[:email].empty? || @person.errors.on(:email)
   end
 
-  def _test_should_encrypt_decrypt_with_iv
+  def test_should_encrypt_decrypt_with_iv
     @person = Person.create :email => 'test@example.com'
     @person2 = Person.find(@person.id)
     assert_not_nil @person2.encrypted_email_iv
     assert_equal 'test@example.com', @person2.email
   end
-  
+
+  # This test is bad because the way the fixture is setup it will always
+  # fail. Skipping for now since we aren't even using Procs for keys.
   def _test_should_create_an_account_regardless_of_arguments_order
     Account.create!(:key => "secret", :password => "password")
     Account.create!(:password => "password" , :key => "secret")
   end
 
-  def _test_should_return_date_with_rails_date
-    @user = Person.new
-    @now = DateTime.new
-    @user.with_rails_date = @now
-    assert_equals @now, Person.decrypt(:with_rails_date, @user.encrypted_with_rails_date)
+  def test_should_create_find_by_index
+    @person = Person.create :index => "index value"
+    assert_equal @person, Person.find_by_index("index value")
+    assert_not_equal @person, Person.find_by_index("not index value")
   end
 
 end
