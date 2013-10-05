@@ -7,7 +7,7 @@ require 'attr_encryptor/version'
 require 'date'
 
 Gem::Specification.new do |s|
-  s.name    = 'attr_encryptor'
+  s.name    = 'attr_encryptor_healthfinch'
   s.version = AttrEncryptor::Version.string
   s.date    = Date.today
 
