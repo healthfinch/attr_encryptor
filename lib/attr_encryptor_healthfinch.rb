@@ -13,12 +13,6 @@ module AttrEncryptor
     end
   end
 
-  def generate_index_hash(key, value)
-    digest = OpenSSL::Digest::Digest.new("sha256")
-    index = OpenSSL::HMAC.digest(digest, key, value)
-    [index].pack("m")
-  end
-
   # Generates attr_accessors that encrypt and decrypt attributes transparently
   #
   # Options (any other options you specify are passed to the encryptor's encrypt and decrypt methods)
@@ -243,6 +237,15 @@ module AttrEncryptor
     end
   end
 
+  def generate_index_hash(attribute, value, options = {})
+    options = encrypted_attributes[attribute.to_sym].merge(options)
+    raise ArgumentError.new('must specify a :index_key') if options[:index_key].to_s.empty?
+    digest = OpenSSL::Digest::Digest.new("sha256")
+    index = OpenSSL::HMAC.digest(digest, options[:index_key], value)
+    index = [index].pack(options[:encode]) if options[:encode]
+    index
+  end
+
   # Contains a hash of encrypted attributes with virtual attribute names as keys
   # and their corresponding options as values
   #
@@ -276,6 +279,11 @@ module AttrEncryptor
   end
 
   module InstanceMethods
+
+    def generate_index_hash(attribute, value)
+      self.class.generate_index_hash(attribute, value, evaluated_attr_encrypted_options_for(attribute))
+    end
+
     # Decrypts a value for the attribute specified using options evaluated in the current object's scope
     #
     # Example
@@ -354,13 +362,12 @@ module AttrEncryptor
       end
 
       def load_index_for_attribute(attribute, encrypted_attribute_name, value = nil)
-        options = self.class.encrypted_attributes[attribute.to_sym]
         index = send("#{encrypted_attribute_name.to_s + "_index"}")
         if (value != nil)
-          index = self.class.generate_index_hash(options[:index_key], value)
+          index = generate_index_hash(attribute, value)
           send("#{encrypted_attribute_name.to_s + "_index"}=", index)
         end
-        self.class.encrypted_attributes[attribute.to_sym] = self.class.encrypted_attributes[attribute.to_sym].merge(:index_hash => index)
+        self.class.encrypted_attributes[attribute.to_sym] = self.class.encrypted_attributes[attribute.to_sym].merge(:index => index)
       end
   end
 end

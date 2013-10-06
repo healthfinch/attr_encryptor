@@ -109,4 +109,12 @@ class ActiveRecordTest < Test::Unit::TestCase
     assert_not_equal @person, Person.find_by_index("not index value")
   end
 
+  def test_should_create_find_all_by_index
+    Person.create :index => "index value"
+    Person.create :index => "index value"
+    Person.create :index => "index value"
+    assert_equal 3, Person.find_all_by_index("index value").length
+    assert_equal 0, Person.find_all_by_index("not index value").length
+  end
+
 end

@@ -20,7 +20,11 @@ if defined?(ActiveRecord::Base)
             self.encrypted_attributes.each do |attribute, options|
               if options[:index_key]
                 self.define_singleton_method("find_by_#{attribute.to_s.downcase}") do |value|
-                  self.where("#{options[:attribute]}_index".to_sym => self.generate_index_hash(options[:index_key], value)).first
+                  self.where("#{options[:attribute]}_index".to_sym => self.generate_index_hash(attribute, value)).first
+                end
+
+                self.define_singleton_method("find_all_by_#{attribute.to_s.downcase}") do |value|
+                  self.where("#{options[:attribute]}_index".to_sym => self.generate_index_hash(attribute, value))
                 end
               end
             end
