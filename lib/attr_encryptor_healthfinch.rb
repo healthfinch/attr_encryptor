@@ -239,11 +239,15 @@ module AttrEncryptor
 
   def generate_index_hash(attribute, value, options = {})
     options = encrypted_attributes[attribute.to_sym].merge(options)
-    raise ArgumentError.new('must specify a :index_key') if options[:index_key].to_s.empty?
-    digest = OpenSSL::Digest::Digest.new("sha256")
-    index = OpenSSL::HMAC.digest(digest, options[:index_key], value)
-    index = [index].pack(options[:encode]) if options[:encode]
-    index
+    if options[:if] && !options[:unless] && !value.nil? && !(value.is_a?(String) && value.empty?)
+      raise ArgumentError.new('must specify a :index_key') if options[:index_key].to_s.empty?
+      digest = OpenSSL::Digest::Digest.new("sha256")
+      index = OpenSSL::HMAC.digest(digest, options[:index_key], value)
+      index = [index].pack(options[:encode]) if options[:encode]
+      index
+    else
+      value
+    end
   end
 
   # Contains a hash of encrypted attributes with virtual attribute names as keys

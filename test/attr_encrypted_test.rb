@@ -315,7 +315,7 @@ class AttrEncryptorTest < Test::Unit::TestCase
   def test_should_raise_if_no_index_key
     @user = User.new
     assert_raise do
-      User.generate_index_hash(:with_suppression, @user.encrypted_with_suppression)
+      User.generate_index_hash(:with_suppression, "test")
     end
   end
 
@@ -324,6 +324,10 @@ class AttrEncryptorTest < Test::Unit::TestCase
     @user.with_index = "test value"
     @user.with_proc_index = "test value"
     assert_equal @user.encrypted_with_proc_index_index, @user.encrypted_with_index_index
+  end
+
+  def test_should_return_nil_for_nil_index
+    assert_equal nil, User.generate_index_hash(:with_index, nil)
   end
 
 end
