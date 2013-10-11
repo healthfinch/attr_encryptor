@@ -204,7 +204,7 @@ module AttrEncryptor
         encrypted_value = encrypted_value.unpack(options[:encode]).first if options[:encode]
         value = options[:encryptor].send(options[:decrypt_method], options.merge!(:value => encrypted_value))
         value = options[:marshaler].send(options[:load_method], value) if options[:marshal]
-        value = Date.parse(value) if options[:force_date] && value.is_a?(String)
+        value = Date.parse(value.to_s) if options[:force_date]
       else
         value = encrypted_value
       end
@@ -227,7 +227,6 @@ module AttrEncryptor
   def encrypt(attribute, value, options = {})
     options = encrypted_attributes[attribute.to_sym].merge(options)
     if options[:if] && !options[:unless] && !value.nil? && !(value.is_a?(String) && value.empty?)
-      value = Date.parse(value) if options[:force_date] && value.is_a?(String)
       value = options[:marshal] ? options[:marshaler].send(options[:dump_method], value) : value.to_s
       encrypted_value = options[:encryptor].send(options[:encrypt_method], options.merge!(:value => value))
       encrypted_value = [encrypted_value].pack(options[:encode]) if options[:encode]
