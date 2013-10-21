@@ -141,7 +141,12 @@ module AttrEncryptor
         load_salt_for_attribute(attribute,encrypted_attribute_name)
         load_index_for_attribute(attribute, encrypted_attribute_name) if options[:index_key]
 
-        instance_variable_get("@#{attribute}") || instance_variable_set("@#{attribute}", decrypt(attribute, send(encrypted_attribute_name)))
+        value = instance_variable_get("@#{attribute}") || instance_variable_set("@#{attribute}", decrypt(attribute, send(encrypted_attribute_name)))
+        if options[:force_date]
+          return Date.parse(value.to_s)
+        else
+          return value
+        end
       end
 
       define_method("#{attribute}=") do |value|
@@ -204,7 +209,6 @@ module AttrEncryptor
         encrypted_value = encrypted_value.unpack(options[:encode]).first if options[:encode]
         value = options[:encryptor].send(options[:decrypt_method], options.merge!(:value => encrypted_value))
         value = options[:marshaler].send(options[:load_method], value) if options[:marshal]
-        value = Date.parse(value.to_s) if options[:force_date]
       else
         value = encrypted_value
       end

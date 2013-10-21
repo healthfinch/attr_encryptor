@@ -295,7 +295,7 @@ class AttrEncryptorTest < Test::Unit::TestCase
     assert_equal @user.generate_index_hash(:with_index, "test value"), @user.encrypted_with_index_index
   end
 
-  def test_should_suppress_access_excetions
+  def test_should_suppress_access_exceptions
     @user = User.new
     @user.with_suppression = 'value'
     assert_nothing_raised do
@@ -308,8 +308,8 @@ class AttrEncryptorTest < Test::Unit::TestCase
     @user = User.new
     @now = Date.new.to_s
     @user.with_force_date = @now
-    assert User.decrypt(:with_force_date, @user.encrypted_with_force_date).is_a?(Date)
-    assert_equal Date.parse(@now), User.decrypt(:with_force_date, @user.encrypted_with_force_date)
+    assert @user.with_force_date.is_a?(Date)
+    assert_equal Date.parse(@now), @user.with_force_date
   end
 
   def test_should_raise_if_no_index_key
