@@ -312,6 +312,13 @@ class AttrEncryptorTest < Test::Unit::TestCase
     assert_equal Date.parse(@now), @user.with_force_date
   end
 
+  def test_should_return_nil_with_force_date
+    @user = User.new
+    @now = Date.new.to_s
+    @user.with_force_date = nil
+    assert_nil @user.with_force_date
+  end
+
   def test_should_raise_if_no_index_key
     @user = User.new
     assert_raise do

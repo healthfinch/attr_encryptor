@@ -142,7 +142,7 @@ module AttrEncryptor
         load_index_for_attribute(attribute, encrypted_attribute_name) if options[:index_key]
 
         value = instance_variable_get("@#{attribute}") || instance_variable_set("@#{attribute}", decrypt(attribute, send(encrypted_attribute_name)))
-        if options[:force_date]
+        if !value.nil? && options[:force_date]
           return Date.parse(value.to_s)
         else
           return value
