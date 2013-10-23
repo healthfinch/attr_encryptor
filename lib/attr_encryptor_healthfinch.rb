@@ -113,7 +113,9 @@ module AttrEncryptor
       :encrypt_method            => 'encrypt',
       :decrypt_method            => 'decrypt',
       :suppress_access_exception => true,
-      :force_date                => false
+      :force_date                => false,
+      :force_integer             => false,
+      :force_boolean             => false
     }.merge!(attr_encrypted_options).merge!(attributes.last.is_a?(Hash) ? attributes.pop : {})
 
     options[:encode] = options[:default_encoding] if options[:encode] == true
@@ -142,11 +144,30 @@ module AttrEncryptor
         load_index_for_attribute(attribute, encrypted_attribute_name) if options[:index_key]
 
         value = instance_variable_get("@#{attribute}") || instance_variable_set("@#{attribute}", decrypt(attribute, send(encrypted_attribute_name)))
-        if !value.nil? && options[:force_date]
-          return Date.parse(value.to_s)
-        else
-          return value
+
+        if value.nil?
+          return nil
         end
+
+        if options[:force_date]
+          return Date.parse(value.to_s)
+        end
+
+        if options[:force_integer]
+          return value.to_i
+        end
+
+        if options[:force_boolean]
+          if value.blank? || value.downcase == "false"
+            return false
+          end
+
+          if value.downcase == "true"
+            return true
+          end
+        end
+
+        return value
       end
 
       define_method("#{attribute}=") do |value|

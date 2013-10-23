@@ -29,6 +29,8 @@ class User
   attr_encrypted :with_proc_index, :key => 'secret key', :index_key => Proc.new { "index secret key" }
   attr_encrypted :with_suppression, :key => 'secret key', :suppress_access_exception => true
   attr_encrypted :with_force_date, :key => 'secret key', :force_date => true
+  attr_encrypted :with_force_integer, :key => 'secret key', :force_integer => true
+  attr_encrypted :with_force_boolean, :key => 'secret key', :force_boolean => true
 
   attr_encryptor :aliased, :key => 'secret_key'
 
@@ -312,9 +314,36 @@ class AttrEncryptorTest < Test::Unit::TestCase
     assert_equal Date.parse(@now), @user.with_force_date
   end
 
+  def test_should_return_fixnum_with_force_integer
+    @user = User.new
+    @user.with_force_integer = "1"
+    assert @user.with_force_integer.is_a?(Integer)
+    assert_equal 1, @user.with_force_integer
+  end
+
+  def test_should_return_boolean_with_force_boolean
+    @user = User.new
+    @user.with_force_boolean = "false"
+    assert @user.with_force_boolean == false
+
+    @user.with_force_boolean = "true"
+    assert @user.with_force_boolean == true
+  end
+
+  def test_should_return_nil_with_force_integer
+    @user = User.new
+    @user.with_force_integer = nil
+    assert_nil @user.with_force_integer
+  end
+
+  def test_should_return_nil_with_force_boolean
+    @user = User.new
+    @user.with_force_boolean = nil
+    assert_nil @user.with_force_boolean
+  end
+
   def test_should_return_nil_with_force_date
     @user = User.new
-    @now = Date.new.to_s
     @user.with_force_date = nil
     assert_nil @user.with_force_date
   end
