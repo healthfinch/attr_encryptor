@@ -31,6 +31,8 @@ class User
   attr_encrypted :with_force_date, :key => 'secret key', :force_date => true
   attr_encrypted :with_force_integer, :key => 'secret key', :force_integer => true
   attr_encrypted :with_force_boolean, :key => 'secret key', :force_boolean => true
+  attr_encrypted :with_force_float, :key => 'secret key', :force_float => true
+  attr_encrypted :with_force_date_time, :key => 'secret key', :force_date_time => true
 
   attr_encryptor :aliased, :key => 'secret_key'
 
@@ -308,17 +310,32 @@ class AttrEncryptorTest < Test::Unit::TestCase
 
   def test_should_return_date_with_force_date
     @user = User.new
-    @now = Date.new.to_s
+    @now = Date.today.to_s
     @user.with_force_date = @now
     assert @user.with_force_date.is_a?(Date)
     assert_equal Date.parse(@now), @user.with_force_date
   end
 
-  def test_should_return_fixnum_with_force_integer
+  def test_should_return_date_time_with_force_date_time
+    @user = User.new
+    @now = DateTime.now.to_s
+    @user.with_force_date_time = @now
+    assert @user.with_force_date_time.is_a?(DateTime)
+    assert_equal DateTime.parse(@now), @user.with_force_date_time
+  end
+
+  def test_should_return_integer_with_force_integer
     @user = User.new
     @user.with_force_integer = "1"
     assert @user.with_force_integer.is_a?(Integer)
     assert_equal 1, @user.with_force_integer
+  end
+
+  def test_should_return_float_with_force_float
+    @user = User.new
+    @user.with_force_float = "1.5"
+    assert @user.with_force_float.is_a?(Float)
+    assert_equal 1.5, @user.with_force_float
   end
 
   def test_should_return_boolean_with_force_boolean
@@ -336,6 +353,12 @@ class AttrEncryptorTest < Test::Unit::TestCase
     assert_nil @user.with_force_integer
   end
 
+  def test_should_return_nil_with_force_float
+    @user = User.new
+    @user.with_force_float = nil
+    assert_nil @user.with_force_float
+  end
+
   def test_should_return_nil_with_force_boolean
     @user = User.new
     @user.with_force_boolean = nil
@@ -346,6 +369,12 @@ class AttrEncryptorTest < Test::Unit::TestCase
     @user = User.new
     @user.with_force_date = nil
     assert_nil @user.with_force_date
+  end
+
+  def test_should_return_nil_with_force_date_time
+    @user = User.new
+    @user.with_force_date_time = nil
+    assert_nil @user.with_force_date_time
   end
 
   def test_should_raise_if_no_index_key

@@ -115,7 +115,9 @@ module AttrEncryptor
       :suppress_access_exception => true,
       :force_date                => false,
       :force_integer             => false,
-      :force_boolean             => false
+      :force_boolean             => false,
+      :force_float               => false,
+      :force_date_time           => false
     }.merge!(attr_encrypted_options).merge!(attributes.last.is_a?(Hash) ? attributes.pop : {})
 
     options[:encode] = options[:default_encoding] if options[:encode] == true
@@ -153,8 +155,16 @@ module AttrEncryptor
           return Date.parse(value.to_s)
         end
 
+        if options[:force_date_time]
+          return DateTime.parse(value.to_s)
+        end
+
         if options[:force_integer]
           return value.to_i
+        end
+
+        if options[:force_float]
+          return value.to_f
         end
 
         if options[:force_boolean]
