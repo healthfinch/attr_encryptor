@@ -347,6 +347,45 @@ class AttrEncryptorTest < Test::Unit::TestCase
     assert @user.with_force_boolean == true
   end
 
+  def test_should_return_date_with_force_date_when_given_date
+    @user = User.new
+    @now = Date.today
+    @user.with_force_date = @now
+    assert @user.with_force_date.is_a?(Date)
+    assert_equal @now, @user.with_force_date
+  end
+
+  def test_should_return_date_time_with_force_date_time_when_given_time
+    @user = User.new
+    @now = DateTime.now
+    @user.with_force_date_time = @now
+    assert @user.with_force_date_time.is_a?(DateTime)
+    assert_equal @now, @user.with_force_date_time
+  end
+
+  def test_should_return_integer_with_force_integer_when_given_integer
+    @user = User.new
+    @user.with_force_integer = 1
+    assert @user.with_force_integer.is_a?(Integer)
+    assert_equal 1, @user.with_force_integer
+  end
+
+  def test_should_return_float_with_force_float_when_given_float
+    @user = User.new
+    @user.with_force_float = 1.5
+    assert @user.with_force_float.is_a?(Float)
+    assert_equal 1.5, @user.with_force_float
+  end
+
+  def test_should_return_boolean_with_force_boolean_when_given_boolean
+    @user = User.new
+    @user.with_force_boolean = false
+    assert @user.with_force_boolean == false
+
+    @user.with_force_boolean = true
+    assert @user.with_force_boolean == true
+  end
+
   def test_should_return_nil_with_force_integer
     @user = User.new
     @user.with_force_integer = nil

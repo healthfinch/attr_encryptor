@@ -151,12 +151,16 @@ module AttrEncryptor
           return nil
         end
 
+        if !value.is_a?(String)
+          return value
+        end
+
         if options[:force_date]
-          return Date.parse(value.to_s)
+          return Date.parse(value)
         end
 
         if options[:force_date_time]
-          return DateTime.parse(value.to_s)
+          return DateTime.parse(value)
         end
 
         if options[:force_integer]
