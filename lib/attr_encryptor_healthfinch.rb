@@ -10,6 +10,17 @@ module AttrEncryptor
       include InstanceMethods
       attr_writer :attr_encrypted_options
       @attr_encrypted_options, @encrypted_attributes = {}, {}
+
+      # Include tracers if New Relic is available and not being silenced
+      if !defined?(::NewRelic::Agent::MethodTracer).nil?
+        class << self
+          include ::NewRelic::Agent::MethodTracer
+
+          add_method_tracer :encrypt, 'Custom/AttrEncryptor/encrypt'
+          add_method_tracer :decrypt, 'Custom/AttrEncryptor/decrypt'
+          add_method_tracer :generate_index_hash, 'Custom/AttrEncryptor/generate_index_hash'
+        end
+      end
     end
   end
 
